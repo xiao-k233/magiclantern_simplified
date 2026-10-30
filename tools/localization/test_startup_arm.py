@@ -21,6 +21,7 @@ int FIO_GetFileSize(const char *p,uint32_t *s){return 0;}
 uint8_t *read_entire_file_persistent(const char *p,int *s){return 0;}
 void __mem_free(void *p){}
 int snprintf(char *p,unsigned n,const char *fmt,...){return 0;}
+void DryosDebugMsg(int channel,int level,const char *fmt,...){}
 int menu_snprintf(char *p,int n,const char *fmt,...){return 0;}
 const char *menu_translate(const char *s){return language_translate(s);}
 unsigned strlen(const char *p){return 0;}
