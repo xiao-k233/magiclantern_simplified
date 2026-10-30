@@ -37,6 +37,13 @@ extern uint8_t *BFNT_BITMAP_DATA;
 extern bfnt_font* BFNT_FONT;
 #endif
 
+/* Prepare a validated immutable font without changing the visible one.
+ * A successfully activated font must remain resident until shutdown: glyph
+ * renderers snapshot this pointer and may still be using an earlier font. */
+int bfnt_prepare_alternate(const char *filename, bfnt_font **prepared);
+void bfnt_activate_alternate(bfnt_font *prepared);
+extern bfnt_font * volatile BFNT_ALT_FONT;
+
 //-------------------------------------------------------------------
 // Format of header block for each character in the 'font_data' array
 // This is immediately followed by 'size' bytes of character data.

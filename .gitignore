@@ -77,3 +77,9 @@ developer_guide/developer_guide.html
 developer_guide/developer_guide.pdf
 
 syntax: regexp
+
+# per-build localization build dirs
+platform/*/build-*
+modules/*/build-*
+modules/*/*/build-*
+modules/build-*

@@ -31,6 +31,7 @@
 #include "version.h"
 #include "bmp.h"
 #include "menu.h"
+#include "language.h"
 #include "property.h"
 #include "consts.h"
 #include "tskmon.h"
@@ -494,6 +495,7 @@ static void my_big_init_task()
 
     /* Read ML config. if feature disabled, nothing happens */
     config_load();
+    language_init();
     
     debug_init_stuff();
 

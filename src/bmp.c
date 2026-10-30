@@ -1144,8 +1144,28 @@ static int bfnt_ok()
 }
 
 // are all char codes in ascending order, for binary search?
-static uint8_t* bfnt_find_char(int code)
+static uint8_t* bfnt_find_char(int code, bfnt_font *alternate, int *source_height, int *from_alternate)
 {
+    *source_height = 40;
+    *from_alternate = 0;
+
+    if (code > 0x7f && alternate)
+    {
+        int n = alternate->charmap_size / 4;
+        int *codes = (int *) ((uint8_t *)alternate + alternate->charmap_offset);
+        int *off = codes + n;
+        uint8_t *bitmaps = (uint8_t *)(off + n);
+        for (int i = 0; i < n; i++)
+        {
+            if (codes[i] == code)
+            {
+                *source_height = alternate->font_width;
+                *from_alternate = 1;
+                return bitmaps + off[i];
+            }
+        }
+    }
+
     if (code < 0) // that's a ML icon
     {
         code = -code-1;
@@ -1153,6 +1173,10 @@ static uint8_t* bfnt_find_char(int code)
         extern canon_font_body_t menu_icons_body;
         return (uint8_t*) &menu_icons_body.bitmaps[code];
     }
+
+    if (!bfnt_ok())
+        return 0;
+
     int n = (BFNT_BITMAP_OFFSET - BFNT_CHAR_CODES) / 4;
     int* codes = (int*) BFNT_CHAR_CODES;
     int* off = (int*) BFNT_BITMAP_OFFSET;
@@ -1170,8 +1194,16 @@ static uint8_t* bfnt_find_char(int code)
 }
 
 // returns width
-int bfnt_draw_char(int c, int px, int py, int fg, int bg)
+static int bfnt_scale_metric(int value, int target_height, int source_height)
 {
+    if (source_height <= 0 || target_height <= 0)
+        return 0;
+    return (value * target_height + source_height / 2) / source_height;
+}
+
+int bfnt_draw_char_scaled(int c, int px, int py, int fg, int bg, int target_height)
+{
+    bfnt_font *alternate = BFNT_ALT_FONT;
     // It seems to me that c is used in three different ways.
     //
     // If a small positive integer, bfnt_find_char() uses
@@ -1192,7 +1224,7 @@ int bfnt_draw_char(int c, int px, int py, int fg, int bg)
     // perhaps a different top-level function for drawing ML icons?
 
     // if c < 0 we can always proceed as these are built-in via ico.c
-    if (c >= 0 && !bfnt_ok())
+    if (c >= 0 && !(c > 0x7f && alternate) && !bfnt_ok())
     {
         #ifndef PYCPARSER   /* circular dependency */
         bmp_printf(FONT_SMALL, 0, 0, "font addr bad");
@@ -1207,16 +1239,16 @@ int bfnt_draw_char(int c, int px, int py, int fg, int bg)
 
     uint8_t * const bvram = bmp_vram();
 
-    uint16_t* chardata = (uint16_t*) bfnt_find_char(c);
+    int source_height, from_alternate;
+    uint8_t* chardata = bfnt_find_char(c, alternate, &source_height, &from_alternate);
     if (!chardata) return 0;
-    uint8_t* buff = (uint8_t*)(chardata + 5);
-    int ptr = 0;
+    uint8_t* buff = chardata + 10;
 
-    int cw  = chardata[0]; // the stored bitmap width
-    int ch  = chardata[1]; // the stored bitmap height
-    int crw = chardata[2]; // the displayed character width
-    int xo  = chardata[3]; // X offset for displaying the bitmap
-    int yo  = chardata[4]; // Y offset for displaying the bitmap
+    int cw  = (chardata[0] | chardata[1] << 8); // the stored bitmap width
+    int ch  = (chardata[2] | chardata[3] << 8); // the stored bitmap height
+    int crw = (chardata[4] | chardata[5] << 8); // the displayed character width
+    int xo  = (chardata[6] | chardata[7] << 8); // X offset for displaying the bitmap
+    int yo  = (chardata[8] | chardata[9] << 8); // Y offset for displaying the bitmap
     int bb    = cw / 8 + (cw % 8 == 0 ? 0 : 1); // calculate the byte number per line
 
     //~ bmp_printf(FONT_SMALL, 0, 0, "%x %d %d %d %d %d %d", chardata, cw, ch, crw, xo, yo, bb);
@@ -1224,37 +1256,62 @@ int bfnt_draw_char(int c, int px, int py, int fg, int bg)
     if (crw+xo > 100) return 0;
     if (ch+yo > 50) return 0;
 
+    int scaled_cw = bfnt_scale_metric(cw, target_height, source_height);
+    int scaled_ch = bfnt_scale_metric(ch, target_height, source_height);
+    int scaled_crw = bfnt_scale_metric(crw, target_height, source_height);
+    int scaled_xo = bfnt_scale_metric(xo, target_height, source_height);
+    int scaled_yo = bfnt_scale_metric(yo, target_height, source_height);
+
+    if (scaled_cw <= 0 && cw)
+        scaled_cw = 1;
+    if (scaled_ch <= 0 && ch)
+        scaled_ch = 1;
+    if (scaled_crw <= 0 && crw)
+        scaled_crw = 1;
+
     if (bg != NO_BG_ERASE)
     {
-        bmp_fill(bg, px, py, crw+xo+3, 40);
+        bmp_fill(bg, px, py, scaled_crw + scaled_xo + 3, target_height);
     }
 
-    int i,j,k;
-    for (i = 0; i < ch; i++)
+    /* When shrinking the monochrome CJK font, visit every source pixel and
+     * map it to the destination.  This is both smaller than area sampling and
+     * guarantees that a one-pixel source stroke cannot disappear. */
+    int shrink_alternate = from_alternate &&
+                     (scaled_cw < cw || scaled_ch < ch);
+    int loop_w = shrink_alternate ? cw : scaled_cw;
+    int loop_h = shrink_alternate ? ch : scaled_ch;
+    for (int y = 0; y < loop_h; y++)
     {
-        for (j = 0; j < bb; j++)
+        int sy = shrink_alternate ? y : y * ch / scaled_ch;
+        int dy = shrink_alternate ? y * scaled_ch / ch : y;
+        for (int x = 0; x < loop_w; x++)
         {
-            for (k = 0; k < 8; k++)
+            int sx = shrink_alternate ? x : x * cw / scaled_cw;
+            int dx = shrink_alternate ? x * scaled_cw / cw : x;
+            if (buff[sy * bb + sx / 8] & (1 << (7 - (sx % 8))))
             {
-                if (j*8 + k < cw)
-                {
-                    if ((buff[ptr+j] & (1 << (7-k))))
-                        #ifdef CONFIG_VXWORKS
-                        bmp_putpixel_fast(bvram, px+j*8+k+xo, py + (i+yo)*(c < 0 ? 1 : 2), fg);
-                        #else
-                        bmp_putpixel_fast(bvram, px+j*8+k+xo, py+i+yo, fg);
-                        #endif
-                }
+                #ifdef CONFIG_VXWORKS
+                int screen_y = py + (dy + scaled_yo) * (c < 0 ? 1 : 2);
+                #else
+                int screen_y = py + dy + scaled_yo;
+                #endif
+                bmp_putpixel_fast(bvram, px + dx + scaled_xo, screen_y, fg);
             }
         }
-        ptr += bb;
     }
-    return crw;
+    return scaled_crw;
 }
 
-int bfnt_char_get_width(int c)
+int bfnt_draw_char(int c, int px, int py, int fg, int bg)
 {
-    if (!bfnt_ok())
+    return bfnt_draw_char_scaled(c, px, py, fg, bg, 40);
+}
+
+int bfnt_char_get_width_scaled(int c, int target_height)
+{
+    bfnt_font *alternate = BFNT_ALT_FONT;
+    if (!(c > 0x7f && alternate) && !bfnt_ok())
     {
         #ifdef FEATURE_VRAM_RGBA
             /**
@@ -1279,10 +1336,16 @@ int bfnt_char_get_width(int c)
     if(c >= 'a' && c <= 'z') { c += 1; }
 #endif
 
-    uint16_t* chardata = (uint16_t*) bfnt_find_char(c);
+    int source_height, from_alternate;
+    uint8_t* chardata = bfnt_find_char(c, alternate, &source_height, &from_alternate);
     if (!chardata) return 0;
-    int crw = chardata[2]; // the displayed character width
-    return crw;
+    int crw = (chardata[4] | chardata[5] << 8); // the displayed character width
+    return bfnt_scale_metric(crw, target_height, source_height);
+}
+
+int bfnt_char_get_width(int c)
+{
+    return bfnt_char_get_width_scaled(c, 40);
 }
 
 /*
