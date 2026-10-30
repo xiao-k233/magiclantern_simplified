@@ -222,7 +222,7 @@ $(BUILD_DIR):
 endif
 
 # copy in files that are never rebuilt
-$(ZIP_DIR): | $(BUILD_DIR)
+$(ZIP_DIR): FORCE | $(BUILD_DIR)
 	$(CP) $(TOP_DIR)/data/cropmks/*.bmp $(BUILD_DIR)/zip/ML/cropmks
 	$(CP) $(TOP_DIR)/data/vram/*.lut $(BUILD_DIR)/zip/ML/data
 	-$(CP) -v $(TOP_DIR)/doc/cam/* $(BUILD_DIR)/zip/ML/doc

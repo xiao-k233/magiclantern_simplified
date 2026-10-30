@@ -75,14 +75,14 @@ def inventory(build='build-lang4-r4'):
     # Displayed by the module info renderer; identifiers and credits stay intact.
     for s in ['Information:','Properties:','Properties (no support):','Callbacks:','More info after you load this module.']:
         add(s,'module-info-label','src/module.c')
-    catalogs={c:{r['source']:r['translation'] for r in json.loads((V/('data/localization/'+c+'.json')).read_text('utf-8'))['messages']} for c in ['zh_cn','de','pl']}
-    result=dict(build=build,static_scope='Built core and selected 19 modules: fields, choices, menu update literals, selected help lines and exact metadata strings',candidate_keys=len(keys),modules=len(MODULES),metadata=metadata,keys=sorted(keys.values(),key=lambda r:r['source']),missing={c:[r for s,r in sorted(keys.items()) if not catalogs[c].get(s)] for c in catalogs})
+    catalogs={c:{r['source']:r['translation'] for r in json.loads((V/('data/localization/'+c+'.json')).read_text('utf-8'))['messages']} for c in ['zh_cn']}
+    result=dict(build=build,static_scope=f'Built core and selected {len(MODULES)} modules: fields, choices, menu update literals, selected help lines and exact metadata strings',candidate_keys=len(keys),modules=len(MODULES),metadata=metadata,keys=sorted(keys.values(),key=lambda r:r['source']),missing={c:[r for s,r in sorted(keys.items()) if not catalogs[c].get(s)] for c in catalogs})
     return result
 
 if __name__=='__main__':
     import sys
-    result=inventory(sys.argv[1] if len(sys.argv)>1 else 'build-lang4-r4')
+    result=inventory(sys.argv[1] if len(sys.argv)>1 else 'build-zh')
     target=Path(sys.argv[2]) if len(sys.argv)>2 else Path('runtime-ui-inventory.json');target.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print('Candidates',result['candidate_keys'],'missing',{c:len(v) for c,v in result['missing'].items()})
-    for c in ['de']:
+    for c in ['zh_cn']:
         print('\n'.join(json.dumps(dict(source=r['source'],roles=r['roles']),ensure_ascii=False) for r in result['missing'][c]))

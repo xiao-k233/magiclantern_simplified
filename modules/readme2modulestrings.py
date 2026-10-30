@@ -79,7 +79,7 @@ def get_command_of(commands):
     for command in commands:
         if is_command_available(command) == True:
             return command
-    print("\nCould not find " + "/".join(commands) + ".", sys.stderr)
+    print("\nCould not find " + "/".join(commands) + ".", file=sys.stderr)
     if "rst2html" in commands:
         print("Please install python-docutils (pip install docutils).", file=sys.stderr)
     print("", file=sys.stderr)

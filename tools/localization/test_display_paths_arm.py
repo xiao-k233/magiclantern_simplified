@@ -44,11 +44,11 @@ subprocess.run([str(arm/('arm-none-eabi-objcopy'+suffix)),'-O','binary',str(elf)
 syms={s[2]:int(s[0],16) for line in subprocess.check_output([str(arm/('arm-none-eabi-nm'+suffix)),str(elf)],text=True).splitlines() if len(s:=line.split())==3}
 Machine.__init__.__globals__.update(raw=raw,syms=syms)
 files={'ML/LANG/INDEX.TXT':(V/'data/lang/INDEX.TXT').read_bytes()}
-for code in ('zh_cn','de','pl'):files['ML/LANG/'+code+'.lng']=(V/('data/lang/'+code+'.lng')).read_bytes()
+for code in ('zh_cn',):files['ML/LANG/'+code+'.lng']=(V/('data/lang/'+code+'.lng')).read_bytes()
 for font in ('zh_cn',):files['ML/FONTS/'+font+'.bfn']=(V/('data/fonts/'+font+'.bfn')).read_bytes()
-inv=inventory(sys.argv[2] if len(sys.argv)>2 else 'build-lang4-r4');cases=dict(truncated_keys=0,selected_help_lines=0,module_prose=0,preserved_metadata=0)
+inv=inventory(sys.argv[2] if len(sys.argv)>2 else 'build-zh');cases=dict(truncated_keys=0,selected_help_lines=0,module_prose=0,preserved_metadata=0)
 assert all(not v for v in inv['missing'].values())
-for code in ('zh_cn','de','pl'):
+for code in ('zh_cn',):
     m=Machine(files,fnv1a(code)&0x7fffffff);m.call('language_init')
     catalog={r['source']:r['translation'] for r in json.loads((V/('data/localization/'+code+'.json')).read_text('utf-8'))['messages']}
     def put(addr,text):m.uc.mem_write(addr,text.encode()+b'\0');return addr
@@ -76,6 +76,6 @@ for code in ('zh_cn','de','pl'):
     n=m.call('test_name_capacity');current='Q'*(n-1)
     check(m.string(m.call('test_menu_name',put(0x30000,current),put(0x34000,'Different original label')))==current,'custom text retained')
 check(all(cases.values()),'all intended regression categories exercised')
-report=dict(result='PASS',execution='Production C display helpers executed as ARM with real catalogs/font loader and mocked card I/O',languages=['zh_cn','de','pl'],cases=cases,static_inventory_keys=inv['candidate_keys'],modules=19,missing_static_inventory_keys={c:len(v) for c,v in inv['missing'].items()},hardware_test=False,limitation='Does not emulate camera drawing, computed messages, raster help pages or every camera state.')
+report=dict(result='PASS',execution='Production C display helpers executed as ARM with real catalogs/font loader and mocked card I/O',languages=['zh_cn'],cases=cases,static_inventory_keys=inv['candidate_keys'],modules=inv['modules'],missing_static_inventory_keys={c:len(v) for c,v in inv['missing'].items()},hardware_test=False,limitation='Does not emulate camera drawing, computed messages, raster help pages or every camera state.')
 (out/'runtime-ui-results.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 print(json.dumps(report,ensure_ascii=False))

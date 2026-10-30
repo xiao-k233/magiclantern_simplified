@@ -5,7 +5,7 @@
 # File-backed localization review, revision 2
 
 For the current four-language r4 update and camera-test status, see
-[5D3 r4 review and build notes](LOCALIZATION-5D3-R4.md). The validation results
+[Chinese-only branch notes](LOCALIZATION-ZH-CN.md). The validation results
 below describe the earlier review revision.
 
 Base: `reticulatedpines/magiclantern_simplified`

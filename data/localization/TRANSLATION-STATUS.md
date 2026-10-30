@@ -7,7 +7,7 @@ English and Simplified Chinese at runtime.
 - Catalog: `data/localization/zh_cn.json` (2264 messages, all with a translation).
 - Compiled resource: `data/lang/zh_cn.lng` (MLLG v2, loaded from `ML/LANG/`).
 - Font resource: `data/fonts/zh_cn.bfn` (972 glyphs, loaded from `ML/FONTS/`).
-- The 73 unrecovered hash-only entries remain in `zh_cn-pending.json`; their
+- The 79 unrecovered hash-only entries remain in `zh_cn-pending.json`; their
   source strings could not be recovered, so the corresponding UI text stays
   English rather than guessing a key.
 - Translation provenance: ported from ryulin456/magiclantern-zh r4
