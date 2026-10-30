@@ -66,3 +66,13 @@ python3 tools/localization/extend_chinese_font.py
   were removed for this branch; the loader/compiler remain language-neutral.
 - The maintainer's real-camera test claim applies to the upstream r4 package,
   not to this rebased branch; verify on hardware before relying on it.
+
+## QEMU menu capture
+
+QEMU's 5D3 display model scans the active BMP buffer.  ML draws its menu into
+the idle buffer and Canon clears the active one shortly afterwards, so a plain
+screendump is blank.  Use the `ml-menu-screendump` branch of `qemu-eos`
+commit `cfdfd0f548`: when the active 8-bit BMP frame is blank it scans the
+alternate buffer (`^ 0x80000`), which lets screendump show the Chinese ML menu.
+Canon GUI frames are unchanged; 100D/1100D use a different idle address and are
+excluded.
