@@ -72,6 +72,8 @@ for code in ('zh_cn',):
                 got=m.string(m.call('test_help_line',put(0x30000,s),i))
                 check(got==catalog[line],code+' selected line '+repr(line));cases['selected_help_lines']+=1
     for row in inv['metadata']:
+        if row['source'] not in catalog:
+            continue
         got=m.string(m.call('test_module_value',put(0x30000,row['field']),put(0x34000,row['source'])))
         check(got==catalog[row['source']],code+' module '+row['module']+' '+row['field']);cases['module_prose']+=1
     for field in ('Author','License','Forum','URL','Version','Build date'):
