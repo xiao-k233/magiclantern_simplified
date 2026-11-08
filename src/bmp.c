@@ -1143,6 +1143,27 @@ static int bfnt_ok()
     return 1;
 }
 
+/* Find a glyph index in a BFNT charmap.  The shipped fonts store the codes
+ * in ascending order, so use a binary search; external or hand-built fonts
+ * may not be sorted, so keep the linear scan as a fallback after a miss. */
+static int bfnt_find_code_index(const int *codes, int n, int code)
+{
+    int lo = 0, hi = n;
+    while (lo < hi)
+    {
+        int mid = lo + (hi - lo) / 2;
+        if (codes[mid] < code) lo = mid + 1;
+        else hi = mid;
+    }
+    if (lo < n && codes[lo] == code)
+        return lo;
+
+    for (int i = 0; i < n; i++)
+        if (codes[i] == code)
+            return i;
+    return -1;
+}
+
 // are all char codes in ascending order, for binary search?
 static uint8_t* bfnt_find_char(int code, bfnt_font *alternate, int *source_height, int *from_alternate)
 {
@@ -1155,14 +1176,12 @@ static uint8_t* bfnt_find_char(int code, bfnt_font *alternate, int *source_heigh
         int *codes = (int *) ((uint8_t *)alternate + alternate->charmap_offset);
         int *off = codes + n;
         uint8_t *bitmaps = (uint8_t *)(off + n);
-        for (int i = 0; i < n; i++)
+        int index = bfnt_find_code_index(codes, n, code);
+        if (index >= 0)
         {
-            if (codes[i] == code)
-            {
-                *source_height = alternate->font_width;
-                *from_alternate = 1;
-                return bitmaps + off[i];
-            }
+            *source_height = alternate->font_width;
+            *from_alternate = 1;
+            return bitmaps + off[index];
         }
     }
 
@@ -1186,10 +1205,9 @@ static uint8_t* bfnt_find_char(int code, bfnt_font *alternate, int *source_heigh
         return (uint8_t*) (BFNT_BITMAP_DATA + off[code - 0x20]);
     }
 
-    int i;
-    for (i = 0; i < n; i++)
-        if (codes[i] == code)
-            return (uint8_t*) (BFNT_BITMAP_DATA + off[i]);
+    int index = bfnt_find_code_index(codes, n, code);
+    if (index >= 0)
+        return (uint8_t*) (BFNT_BITMAP_DATA + off[index]);
     return 0;
 }
 

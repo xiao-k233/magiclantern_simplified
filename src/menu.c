@@ -2854,7 +2854,8 @@ skip_name:
     int x_end = in_submenu ? x + g_submenu_width - SUBMENU_OFFSET : 717;
     
     int char_width = fontspec_font(fnt)->width;
-    w = MAX(w, bmp_string_width(fnt, display_name) + char_width);
+    int name_width = bmp_string_width(fnt, display_name);
+    w = MAX(w, name_width + char_width);
 
     // both submenu marker and value? make sure they don't overlap
     if (entry->icon_type == IT_SUBMENU && info->value[0])
@@ -2882,7 +2883,7 @@ skip_name:
     int xval = x + w;
 
     // value overlaps name? show value only (overwrite the name)
-    if (xval < x + bmp_string_width(fnt, display_name))
+    if (xval < x + name_width)
     {
         xval = x;
     }
