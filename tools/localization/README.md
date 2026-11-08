@@ -7,6 +7,8 @@ packaging, AF experiments or historical workspace paths are needed.
   and rejection of duplicate keys and changed printf arguments.
 * `python tools/localization/catalog.py data/localization/zh_cn.json --output data/lang/zh_cn.lng`
   validates and compiles the human-readable catalog deterministically.
+* `python tools/localization/build_chinese_font.py` rebuilds
+  `data/fonts/zh_cn.bfn` from the unmodified HarmonyOS Sans SC source font.
 * `python tools/localization/audit_strings.py src data/localization/zh_cn.json`
   reports untranslated literal `.name`, `.help` and `.help2` fields. Optional
   `--binary path/to/magiclantern.bin` limits this to strings in one camera build.

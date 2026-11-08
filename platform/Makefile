@@ -236,8 +236,7 @@ zip_contents:: $(ZIP_DIR) $(BUILD_DIR)/autoexec.bin $(BUILD_DIR)/magiclantern.bi
 	mkdir -p $(ZIP_DIR)/ML/LANG
 	$(CP) $(TOP_DIR)/data/lang/* $(ZIP_DIR)/ML/LANG/
 	$(CP) $(TOP_DIR)/data/fonts/*.bfn $(ZIP_DIR)/ML/fonts/
-	$(CP) $(TOP_DIR)/doc/OFL-NotoSansCJK.txt $(ZIP_DIR)/ML/doc/
-	$(CP) $(TOP_DIR)/doc/OFL-NotoSansSC.txt $(ZIP_DIR)/ML/doc/
+	$(CP) $(TOP_DIR)/doc/HarmonyOS-Sans-LICENSE.txt $(ZIP_DIR)/ML/doc/
 
 ifeq ($(CONFIG_MODULES),y)
     ifneq ($(CONFIG_TCC),y)

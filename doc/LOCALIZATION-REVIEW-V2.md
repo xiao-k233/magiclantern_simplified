@@ -100,9 +100,10 @@ This is not a claim of complete translation coverage on every camera.
 
 Module metadata uses the same file lookup at display time. Module names/help
 remain English in their source/build metadata; the core does not embed a Chinese
-module-summary table. The original full font-generation input is still unavailable;
-the preserved BFNT and its original Noto font license are included. No claim is
-made that these tools regenerate that font without its original inputs.
+module-summary table. The original full font-generation input used for the upstream review is still
+unavailable; this branch now regenerates the BFNT from HarmonyOS Sans SC (see
+`doc/HarmonyOS-Sans-LICENSE.txt`). The historical review results below describe
+the upstream r4 package, not the regenerated font.
 
 ## Validation on 2026-10-20
 
