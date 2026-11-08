@@ -12,6 +12,10 @@ ML_BOOT_OBJ = boot-d45.o
 MAIN_FIRMWARE_ADDR = 0xFF0C0000
 PLATFORM_ARCH = armv5te
 
+# ARM946E-S is the 5D3 core.  -mtune only changes scheduling; the ISA stays
+# ARMv5TE, so module ABI and instruction compatibility are unchanged.
+CFLAGS_PLATFORM += -mtune=arm946e-s
+
 # DryOSmemory map
 # RESTARTSTART is selected to be just above the end of the bss
 #
