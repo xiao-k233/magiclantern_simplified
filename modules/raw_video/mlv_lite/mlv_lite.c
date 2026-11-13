@@ -354,6 +354,17 @@ static GUARDED_BY(RawRecTask)   int chunk_frame_count[CARD_COUNT] = {0};        
 static volatile                 int buffer_full = 0;                /* true when the memory becomes full */
        GUARDED_BY(RawRecTask)   char *raw_movie_filename = NULL;      /* file name for current (or last) movie */
 static GUARDED_BY(RawRecTask)   char chunk_filename[CARD_COUNT][FIO_MAX_PATH_LENGTH] = {0};          /* file name for current movie chunk */
+
+/* Show only the file name, not the full card path, in the info bar. */
+static void mlv_overlay_update_filename(const char *path)
+{
+    const char *name = path;
+    for (const char *p = path; *p; p++)
+        if (*p == '/' || *p == '\\')
+            name = p + 1;
+    mlv_overlay_set_filename(name);
+}
+
 static GUARDED_BY(RawRecTask)   int64_t written_total[CARD_COUNT] = {0};          /* how many bytes we have written in this movie */
 static GUARDED_BY(RawRecTask)   int64_t written_chunk[CARD_COUNT] = {0};          /* same for current chunk */
 static GUARDED_BY(RawRecTask)   int writing_time[CARD_COUNT] = {0};               /* time spent by raw_video_rec_task in FIO_WriteFile calls */
@@ -3243,6 +3254,8 @@ int write_frames(FILE **pf, void *ptr, int group_size, int num_frames, int card_
         {
             printf("Success!\n");
             *pf = f = g;
+            if (card_index == 0)
+                mlv_overlay_update_filename(chunk_filename[0]);
         }
         else
         {
@@ -3443,6 +3456,9 @@ void raw_video_rec_task(uint32_t card_index)
             NotifyBox(5000, "File create error");
             goto cleanup;
         }
+
+        if (card_index == 0)
+            mlv_overlay_update_filename(chunk_filename[0]);
 
         /* Need to start the recording of audio before the init of the mlv chunk */
         mlv_rec_call_cbr(MLV_REC_EVENT_STARTING, NULL);
@@ -3957,6 +3973,8 @@ cleanup:
 
         ResumeLiveView();
         redraw();
+        if (card_index == 0)
+            mlv_overlay_set_filename(NULL);
         raw_recording_state = RAW_IDLE;
         mlv_rec_call_cbr(MLV_REC_EVENT_STOPPED, NULL);
     }

@@ -116,4 +116,7 @@ extern void update_lens_display(int top, int bottom);   /* refactor with CBR */
 
 /* force a faster redraw of LiveView info bars */
 void lens_display_set_dirty();
+
+/* show a recording filename in the AF/MF indicator (mlv_lite) */
+void mlv_overlay_set_filename(const char *filename);
 #endif

@@ -3221,10 +3221,27 @@ static LVINFO_UPDATE_FUNC(wb_update)
 /* in focus.c */
 extern LVINFO_UPDATE_FUNC(focus_dist_update);
 
+static char mlv_overlay_filename[32];
+
+/* Called by mlv_lite while recording, to show the chunk being written
+ * in place of the AF/MF indicator. Pass NULL or "" when recording stops. */
+void mlv_overlay_set_filename(const char *filename)
+{
+    if (filename && filename[0])
+        snprintf(mlv_overlay_filename, sizeof(mlv_overlay_filename), "%s", filename);
+    else
+        mlv_overlay_filename[0] = '\0';
+
+    lens_display_set_dirty();
+}
+
 static LVINFO_UPDATE_FUNC(af_mf_update)
 {
-    LVINFO_BUFFER(4);
-    snprintf(buffer, sizeof(buffer), is_manual_focus() ? "MF" : "AF");
+    LVINFO_BUFFER(32);
+    if (mlv_overlay_filename[0])
+        snprintf(buffer, sizeof(buffer), "%s", mlv_overlay_filename);
+    else
+        snprintf(buffer, sizeof(buffer), is_manual_focus() ? "MF" : "AF");
 }
 
 static LVINFO_UPDATE_FUNC(batt_update)
