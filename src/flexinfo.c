@@ -266,6 +266,10 @@ info_elem_t info_config_photo[] =
 
     /* entry 11: Time */
     { .string = { { INFO_TYPE_STRING, { DISPLAY_CLOCK_POS_X, DISPLAY_CLOCK_POS_Y, 2, .name = "Time" }}, INFO_STRING_TIME, COLOR_FG_NONLV, INFO_COL_PEEK, INFO_FONT_LARGE } },
+#if defined(CONFIG_5D3)
+    /* entry 12: battery estimate (remaining time + drain rate), right of the battery percentage */
+    { .string = { { INFO_TYPE_STRING, { 92, 32, 2, INFO_ANCHOR_LEFT | INFO_ANCHOR_TOP, 4, INFO_ANCHOR_LEFT | INFO_ANCHOR_TOP, .name = "Battery Est" }}, INFO_STRING_BATTERY_EST, COLOR_YELLOW, INFO_COL_PEEK, INFO_FONT_MEDIUM } },
+#endif
 #endif
 
 #if defined(CONFIG_60D)
@@ -1502,9 +1506,18 @@ uint32_t info_get_string(char *buffer, uint32_t maxsize, uint32_t string_type)
             snprintf(buffer, maxsize, "%d", GetBatteryHist());
             break;
         }
+        case INFO_STRING_BATTERY_EST:
+        {
+            int seconds = GetBatteryTimeRemaining();
+            int drain_rate = GetBatteryDrainRate();
+            /* NOTE: percent signs are doubled because the string is passed to bmp_printf as a format */
+            snprintf(buffer, maxsize, "%dh%02dm %2d%%%%/h", seconds / 3600, (seconds % 3600) / 60, drain_rate);
+            break;
+        }
 #else
         case INFO_STRING_BATTERY_PCT:
         case INFO_STRING_BATTERY_ID:
+        case INFO_STRING_BATTERY_EST:
         {
             /* feature not enabled/available */
             return 1;
@@ -2967,7 +2980,8 @@ info_string_map_t info_string_map[] =
     { INFO_STRING_HDR                , "HDR"                 },
     { INFO_STRING_CAM_DATE           , "CAM_DATE"            },
     { INFO_STRING_FREE_GB_INT        , "FREE_GB_INT"         },
-    { INFO_STRING_FREE_GB_FLOAT      , "FREE_GB_FLOAT"       }
+    { INFO_STRING_FREE_GB_FLOAT      , "FREE_GB_FLOAT"       },
+    { INFO_STRING_BATTERY_EST        , "BATTERY_EST"         }
 };
 
 void info_edit_parameters(uint32_t action, uint32_t parameter)

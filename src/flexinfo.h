@@ -146,6 +146,8 @@ typedef struct
 #define INFO_STRING_DOF_NEAR             55
 #define INFO_STRING_DOF_FAR              56
 #define INFO_STRING_DOF_HF               57
+/* remaining battery time and drain rate (5D3 photo info) */
+#define INFO_STRING_BATTERY_EST          58
 
 #define INFO_FONT_SMALL         0
 #define INFO_FONT_MEDIUM        1
