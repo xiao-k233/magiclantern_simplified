@@ -1292,13 +1292,72 @@ int bfnt_draw_char_scaled(int c, int px, int py, int fg, int bg, int target_heig
         bmp_fill(bg, px, py, scaled_crw + scaled_xo + 3, target_height);
     }
 
+    /* Fast path: the target size equals the glyph's native size, so no
+     * coordinate mapping is needed.  This is the common case for the 32px
+     * menu font; the old code still performed two divisions per pixel here. */
+    if (scaled_cw == cw && scaled_ch == ch)
+    {
+        for (int y = 0; y < ch; y++)
+        {
+            const uint8_t *row = buff + y * bb;
+            #ifdef CONFIG_VXWORKS
+            int screen_y = py + (y + scaled_yo) * (c < 0 ? 1 : 2);
+            #else
+            int screen_y = py + y + scaled_yo;
+            #endif
+            for (int x = 0; x < cw; x++)
+                if (row[x / 8] & (1 << (7 - (x % 8))))
+                    bmp_putpixel_fast(bvram, px + x + scaled_xo, screen_y, fg);
+        }
+        return scaled_crw;
+    }
+
     /* When shrinking the monochrome CJK font, visit every source pixel and
      * map it to the destination.  This is both smaller than area sampling and
-     * guarantees that a one-pixel source stroke cannot disappear. */
+     * guarantees that a one-pixel source stroke cannot disappear.
+     *
+     * Precompute the per-column/per-row mapping once per glyph; the original
+     * expressions divide for every pixel.  Keep the exact integer-truncation
+     * mapping (no sampling change), so the rendered output is identical. */
     int shrink_alternate = from_alternate &&
                      (scaled_cw < cw || scaled_ch < ch);
     int loop_w = shrink_alternate ? cw : scaled_cw;
     int loop_h = shrink_alternate ? ch : scaled_ch;
+
+    if (loop_w <= 128 && loop_h <= 128)
+    {
+        uint8_t sxmap[128], dxmap[128], symap[128], dymap[128];
+        for (int x = 0; x < loop_w; x++)
+        {
+            sxmap[x] = shrink_alternate ? x : x * cw / scaled_cw;
+            dxmap[x] = shrink_alternate ? x * scaled_cw / cw : x;
+        }
+        for (int y = 0; y < loop_h; y++)
+        {
+            symap[y] = shrink_alternate ? y : y * ch / scaled_ch;
+            dymap[y] = shrink_alternate ? y * scaled_ch / ch : y;
+        }
+        for (int y = 0; y < loop_h; y++)
+        {
+            int sy = symap[y];
+            int dy = dymap[y];
+            #ifdef CONFIG_VXWORKS
+            int screen_y = py + (dy + scaled_yo) * (c < 0 ? 1 : 2);
+            #else
+            int screen_y = py + dy + scaled_yo;
+            #endif
+            for (int x = 0; x < loop_w; x++)
+            {
+                int sx = sxmap[x];
+                int dx = dxmap[x];
+                if (buff[sy * bb + sx / 8] & (1 << (7 - (sx % 8))))
+                    bmp_putpixel_fast(bvram, px + dx + scaled_xo, screen_y, fg);
+            }
+        }
+        return scaled_crw;
+    }
+
+    /* Fallback for unusually large glyphs: keep the original implementation. */
     for (int y = 0; y < loop_h; y++)
     {
         int sy = shrink_alternate ? y : y * ch / scaled_ch;
